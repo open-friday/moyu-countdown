@@ -1,0 +1,63 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: var(--s-3) 0;
+}
+
+.group {
+  display: flex;
+  gap: 4px;
+}
+
+.sep {
+  font-family: var(--font-num);
+  font-size: 36px;
+  color: var(--color-accent-strong);
+  padding: 0 2px;
+  line-height: 78px;
+  display: flex;
+  align-items: center;
+}
+
+.label {
+  text-align: center;
+  font-size: 10px;
+  color: var(--color-text-3);
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.labelGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.labelText {
+  width: 54px;
+  text-align: center;
+}
+
+.offwork {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-5) 0;
+}
+
+.offworkEmoji {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.offworkText {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-accent-strong);
+}

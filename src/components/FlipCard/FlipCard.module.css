@@ -1,0 +1,85 @@
+.flip {
+  width: 54px;
+  height: 78px;
+  border-radius: var(--r-md);
+  background: linear-gradient(
+    180deg,
+    var(--color-surface-3) 0%,
+    var(--color-surface-2) 50%,
+    var(--color-surface) 51%,
+    var(--color-surface-2) 100%
+  );
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 48px;
+  color: var(--color-text-1);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-flip);
+  position: relative;
+  perspective: 600px;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* center line */
+.flip::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 50%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.7);
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.current {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+/* The flipping half (top half flips down) */
+.flap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 50%;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transform-origin: bottom center;
+  z-index: 3;
+  animation: flipDown var(--d-flip) var(--ease-flip) forwards;
+}
+
+.flapInner {
+  position: absolute;
+  inset: 0;
+  height: 200%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    180deg,
+    var(--color-surface-3) 0%,
+    var(--color-surface-2) 100%
+  );
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 48px;
+  color: var(--color-text-1);
+  backface-visibility: hidden;
+}
+
+@keyframes flipDown {
+  0% {
+    transform: rotateX(0deg);
+  }
+  100% {
+    transform: rotateX(-90deg);
+  }
+}

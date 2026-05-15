@@ -1,0 +1,93 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  animation: backdropIn 0.25s ease;
+}
+
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.card {
+  width: min(320px, 88vw);
+  background: var(--color-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-xl);
+  padding: var(--s-7) var(--s-6) var(--s-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--color-divider);
+  animation: cardIn 0.35s var(--ease-flip);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(28px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.emoji {
+  font-size: 72px;
+  line-height: 1;
+  animation: emojiBounce 0.55s var(--ease-flip) 0.1s both;
+}
+
+@keyframes emojiBounce {
+  0%   { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  55%  { transform: scale(1.18) rotate(5deg); }
+  75%  { transform: scale(0.93) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--egg-color, var(--color-text-1));
+  text-align: center;
+  animation: fadeUp 0.3s ease 0.3s both;
+}
+
+.desc {
+  font-size: 14px;
+  color: var(--color-text-2);
+  text-align: center;
+  line-height: 1.6;
+  animation: fadeUp 0.3s ease 0.4s both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dismiss {
+  margin-top: var(--s-2);
+  padding: 9px 28px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface-2);
+  color: var(--color-text-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color var(--d-fast), color var(--d-fast), background var(--d-fast);
+  animation: fadeUp 0.3s ease 0.5s both;
+}
+
+.dismiss:hover {
+  border-color: var(--egg-color, var(--color-accent));
+  color: var(--egg-color, var(--color-accent-strong));
+  background: var(--color-surface-3);
+}
+
+.dismiss:focus-visible {
+  outline: 2px solid var(--egg-color, var(--color-accent));
+  outline-offset: 2px;
+}
