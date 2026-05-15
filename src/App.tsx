@@ -24,18 +24,18 @@ const WEEKDAY_ACCENT: Record<string, string> = {
   sat: '#5B8DEF',
 }
 
-const WORK_START = 9 * 60
-const WORK_END = 18 * 60
-const WORK_DURATION = WORK_END - WORK_START
-
 function getWeekdayKey(date: Date): string {
   return WEEKDAYS[date.getDay()]
 }
 
-function calcProgress(now: Date): number {
+function calcProgress(now: Date, startH: number, startM: number, endH: number, endM: number): number {
   const minuteOfDay = now.getHours() * 60 + now.getMinutes()
-  const elapsed = Math.min(Math.max(minuteOfDay - WORK_START, 0), WORK_DURATION)
-  return Math.round((elapsed / WORK_DURATION) * 100)
+  const workStart = startH * 60 + startM
+  const workEnd = endH * 60 + endM
+  const workDuration = workEnd - workStart
+  if (workDuration <= 0) return 0
+  const elapsed = Math.min(Math.max(minuteOfDay - workStart, 0), workDuration)
+  return Math.round((elapsed / workDuration) * 100)
 }
 
 export default function App() {
@@ -46,8 +46,11 @@ export default function App() {
     totalSeconds,
     isDone,
     countdownLabel,
+    startHour,
+    startMinute,
     targetHour,
     targetMinute,
+    setWorkStartTarget,
     setWorkEndTarget,
   } = useDayCountdown()
   const [showSettings, setShowSettings] = useState(false)
@@ -66,7 +69,7 @@ export default function App() {
 
   const weekday = getWeekdayKey(now)
   const dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
-  const pct = calcProgress(now)
+  const pct = calcProgress(now, startHour, startMinute, targetHour, targetMinute)
   const accentColor = WEEKDAY_ACCENT[weekday] ?? '#5B8DEF'
 
   // Celebration only triggers when the work day is actually done
@@ -163,9 +166,14 @@ export default function App() {
 
       {showSettings && (
         <SettingsSheet
+          startHour={startHour}
+          startMinute={startMinute}
           targetHour={targetHour}
           targetMinute={targetMinute}
-          onSave={setWorkEndTarget}
+          onSave={(sh, sm, eh, em) => {
+            setWorkStartTarget(sh, sm)
+            setWorkEndTarget(eh, em)
+          }}
           onClose={() => setShowSettings(false)}
         />
       )}

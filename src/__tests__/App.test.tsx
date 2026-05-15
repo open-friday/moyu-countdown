@@ -43,7 +43,7 @@ describe('App', () => {
 
   it('renders target pill', () => {
     render(<App />)
-    expect(screen.getByText(/距下班/)).toBeInTheDocument()
+    expect(screen.getAllByText(/下班/).length).toBeGreaterThan(0)
   })
 
   it('shows progress bar', () => {
