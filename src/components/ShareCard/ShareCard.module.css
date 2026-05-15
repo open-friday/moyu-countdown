@@ -1,0 +1,85 @@
+/* 375×667px natural size = 0.5× of 750×1334 output */
+.card {
+  width: 375px;
+  height: 667px;
+  border-radius: var(--r-lg);
+  padding: var(--s-6) var(--s-5);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  color: #F8FAFF;
+  flex-shrink: 0;
+}
+
+/* Radial highlight overlay */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 40% at 50% 30%, rgba(255, 255, 255, 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  position: relative;
+}
+
+.brand {
+  font-size: 14px;
+  opacity: 0.85;
+  letter-spacing: 0.12em;
+  font-family: var(--font-sans);
+}
+
+.headLine {
+  font-size: 13px;
+  opacity: 0.9;
+  margin-top: var(--s-3);
+  margin-bottom: var(--s-3);
+  font-family: var(--font-sans);
+}
+
+.bigNum {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 72px;
+  color: #0A0C10;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.smallNum {
+  color: #0A0C10;
+  opacity: 0.85;
+  font-family: var(--font-num);
+  font-size: 18px;
+  margin-top: var(--s-2);
+}
+
+.quote {
+  font-size: 18px;
+  color: #F8FAFF;
+  font-weight: 500;
+  line-height: 1.4;
+  max-width: 280px;
+  position: relative;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  opacity: 0.75;
+  color: #0A0C10;
+  position: relative;
+  font-family: var(--font-num);
+}
+
+.rank {
+  font-size: 11px;
+}

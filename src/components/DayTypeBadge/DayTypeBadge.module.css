@@ -1,0 +1,30 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid currentColor;
+  transition: color var(--d-fast), background var(--d-fast), border-color var(--d-fast);
+}
+
+.workday {
+  color: var(--color-accent-strong);
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
+.weekend {
+  color: #86E5BC;
+  background: rgba(93, 211, 158, 0.14);
+  border-color: #5DD39E;
+}
+
+.holiday {
+  color: #FFDA8A;
+  background: rgba(244, 194, 94, 0.18);
+  border-color: #F4C25E;
+}
