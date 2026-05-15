@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import html2canvas from 'html2canvas'
 import { ShareCard, type ShareCardProps } from '../ShareCard/ShareCard'
 import styles from './ShareModal.module.css'
@@ -48,7 +49,7 @@ export function ShareModal({ onClose, ...cardProps }: ShareModalProps) {
     }
   }, [busy])
 
-  return (
+  return createPortal(
     <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="分享摸鱼成绩">
       <div className={styles.sheet}>
         <div className={styles.header}>
@@ -79,6 +80,7 @@ export function ShareModal({ onClose, ...cardProps }: ShareModalProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
