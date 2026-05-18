@@ -8,6 +8,13 @@ import {
   type HolidayInfo,
 } from '../data/holidays2026'
 
+function loadNumber(key: string, fallback: number): number {
+  const v = localStorage.getItem(key)
+  if (v === null) return fallback
+  const n = parseInt(v, 10)
+  return isNaN(n) ? fallback : n
+}
+
 export interface DayCountdownState {
   now: Date
   dayType: DayType
@@ -15,14 +22,19 @@ export interface DayCountdownState {
   totalSeconds: number
   isDone: boolean
   countdownLabel: string
+  startHour: number
+  startMinute: number
   targetHour: number
   targetMinute: number
+  setWorkStartTarget: (hour: number, minute: number) => void
   setWorkEndTarget: (hour: number, minute: number) => void
 }
 
 export function useDayCountdown(defaultHour = 18, defaultMinute = 0): DayCountdownState {
-  const [workEndHour, setWorkEndHour] = useState(defaultHour)
-  const [workEndMinute, setWorkEndMinute] = useState(defaultMinute)
+  const [workStartHour, setWorkStartHour] = useState(() => loadNumber('workStartHour', 9))
+  const [workStartMinute, setWorkStartMinute] = useState(() => loadNumber('workStartMinute', 0))
+  const [workEndHour, setWorkEndHour] = useState(() => loadNumber('workEndHour', defaultHour))
+  const [workEndMinute, setWorkEndMinute] = useState(() => loadNumber('workEndMinute', defaultMinute))
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -46,7 +58,7 @@ export function useDayCountdown(defaultHour = 18, defaultMinute = 0): DayCountdo
     // workday: countdown to today's work-end time
     targetDate = new Date(now)
     targetDate.setHours(workEndHour, workEndMinute, 0, 0)
-    countdownLabel = `工作日 · 距下班 ${String(workEndHour).padStart(2, '0')}:${String(workEndMinute).padStart(2, '0')}`
+    countdownLabel = `工作日 ${String(workStartHour).padStart(2, '0')}:${String(workStartMinute).padStart(2, '0')} 上班 → ${String(workEndHour).padStart(2, '0')}:${String(workEndMinute).padStart(2, '0')} 下班`
   }
 
   const rawSeconds = Math.floor((targetDate.getTime() - now.getTime()) / 1000)
@@ -60,11 +72,21 @@ export function useDayCountdown(defaultHour = 18, defaultMinute = 0): DayCountdo
     totalSeconds,
     isDone,
     countdownLabel,
+    startHour: workStartHour,
+    startMinute: workStartMinute,
     targetHour: workEndHour,
     targetMinute: workEndMinute,
+    setWorkStartTarget: (h, m) => {
+      setWorkStartHour(h)
+      setWorkStartMinute(m)
+      localStorage.setItem('workStartHour', String(h))
+      localStorage.setItem('workStartMinute', String(m))
+    },
     setWorkEndTarget: (h, m) => {
       setWorkEndHour(h)
       setWorkEndMinute(m)
+      localStorage.setItem('workEndHour', String(h))
+      localStorage.setItem('workEndMinute', String(m))
     },
   }
 }
