@@ -133,8 +133,7 @@ describe('ShareModal', () => {
 
   it('shows busy spinner while generating', async () => {
     // Make html2canvas hang to observe busy state
-    let resolve: (v: any) => void
-    vi.mocked(html2canvas).mockReturnValue(new Promise((r) => { resolve = r }) as any)
+    vi.mocked(html2canvas).mockReturnValue(new Promise(() => {}) as any)
 
     render(<ShareModal {...BASE_PROPS} />)
     fireEvent.click(screen.getByText('📤 保存 / 分享').closest('button')!)
