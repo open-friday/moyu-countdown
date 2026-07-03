@@ -48,7 +48,7 @@ export function EasterEggCollection({ eggs, onClose, onReplay }: EasterEggCollec
         </div>
 
         <div className={styles.hint}>
-          点击已解锁的彩蛋可重播 · 快速点击倒计时或长按进度条试试
+          点击已解锁的彩蛋可重播 · 长按数字、双击空白或连续刷新文案试试
         </div>
       </div>
     </div>

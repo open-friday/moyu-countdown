@@ -1,9 +1,12 @@
 export type EasterEggId =
-  | 'time_noon'
-  | 'time_offwork'
-  | 'time_fullhour'
-  | 'behavior_fish'
-  | 'behavior_warp'
+  | 'egg_lunch_signal'
+  | 'egg_friday_confetti'
+  | 'egg_hour_flash'
+  | 'egg_overtime'
+  | 'egg_midnight'
+  | 'egg_longpress'
+  | 'egg_doubletap_blank'
+  | 'egg_frenzy_refresh'
 
 export type EasterEggTriggerType = 'time' | 'behavior'
 
@@ -19,4 +22,5 @@ export interface EasterEggDef {
 export interface EasterEggItem {
   def: EasterEggDef
   unlocked: boolean
+  firstUnlockedAt?: string
 }
