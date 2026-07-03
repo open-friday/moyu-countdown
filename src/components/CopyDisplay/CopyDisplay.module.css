@@ -8,11 +8,37 @@
   border-radius: var(--r-lg);
 }
 
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
 .segLabel {
   font-size: 11px;
   color: var(--color-text-3);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.refreshBtn {
+  flex: none;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--r-md);
+  background: var(--color-surface-2);
+  color: var(--color-text-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--d-fast), color var(--d-fast);
+}
+
+.refreshBtn:hover {
+  border-color: var(--color-accent-strong);
+  color: var(--color-accent-strong);
 }
 
 .message {

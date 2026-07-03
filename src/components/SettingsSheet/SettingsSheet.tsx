@@ -15,7 +15,15 @@ export function SettingsSheet({ startHour, startMinute, targetHour, targetMinute
   const [sMinute, setSMinute] = useState(String(startMinute).padStart(2, '0'))
   const [eHour, setEHour] = useState(String(targetHour).padStart(2, '0'))
   const [eMinute, setEMinute] = useState(String(targetMinute).padStart(2, '0'))
+  const [message, setMessage] = useState('')
   const overlayRef = useRef<HTMLDivElement>(null)
+
+  function resetToCurrentSettings() {
+    setSHour(String(startHour).padStart(2, '0'))
+    setSMinute(String(startMinute).padStart(2, '0'))
+    setEHour(String(targetHour).padStart(2, '0'))
+    setEMinute(String(targetMinute).padStart(2, '0'))
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -26,13 +34,31 @@ export function SettingsSheet({ startHour, startMinute, targetHour, targetMinute
   }, [onClose])
 
   function handleSave() {
-    const sh = Math.min(21, Math.max(6, parseInt(sHour, 10) || 6))
-    const sm = Math.min(59, Math.max(0, parseInt(sMinute, 10) || 0))
-    const eh = Math.min(22, Math.max(7, parseInt(eHour, 10) || 7))
-    const em = Math.min(59, Math.max(0, parseInt(eMinute, 10) || 0))
-    // ensure start < end
-    const finalSh = sh < eh ? sh : Math.max(6, eh - 1)
-    onSave(finalSh, sm, eh, em)
+    const sh = parseInt(sHour, 10)
+    const sm = parseInt(sMinute, 10)
+    const eh = parseInt(eHour, 10)
+    const em = parseInt(eMinute, 10)
+    const startTotal = sh * 60 + sm
+    const endTotal = eh * 60 + em
+
+    if (Number.isNaN(startTotal) || sh < 6 || sh > 22 || sm < 0 || sm > 59) {
+      setMessage('上班时间需在 06:00–22:00 之间')
+      resetToCurrentSettings()
+      return
+    }
+    if (Number.isNaN(endTotal) || eh > 23 || em < 0 || em > 59) {
+      setMessage('暂不支持跨夜班')
+      resetToCurrentSettings()
+      return
+    }
+    if (endTotal <= startTotal) {
+      setMessage('下班时间需晚于上班时间')
+      resetToCurrentSettings()
+      return
+    }
+
+    setMessage('')
+    onSave(sh, sm, eh, em)
     onClose()
   }
 
@@ -53,7 +79,7 @@ export function SettingsSheet({ startHour, startMinute, targetHour, targetMinute
               className={styles.timeInput}
               type="number"
               min={6}
-              max={21}
+              max={22}
               value={sHour}
               onChange={(e) => setSHour(e.target.value)}
               aria-label="上班小时"
@@ -77,8 +103,8 @@ export function SettingsSheet({ startHour, startMinute, targetHour, targetMinute
             <input
               className={styles.timeInput}
               type="number"
-              min={7}
-              max={22}
+              min={6}
+              max={23}
               value={eHour}
               onChange={(e) => setEHour(e.target.value)}
               aria-label="小时"
@@ -96,6 +122,12 @@ export function SettingsSheet({ startHour, startMinute, targetHour, targetMinute
           </div>
           <span className={styles.hint}>工作日 {sHour.padStart(2,'0')}:{sMinute.padStart(2,'0')} 上班 → {eHour.padStart(2,'0')}:{eMinute.padStart(2,'0')} 下班</span>
         </div>
+
+        {message && (
+          <p className={styles.message} role="status">
+            {message}
+          </p>
+        )}
 
         <div className={styles.actions}>
           <button className={styles.btn} onClick={onClose}>取消</button>
