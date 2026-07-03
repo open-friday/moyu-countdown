@@ -1,0 +1,50 @@
+name: CI
+
+# 集成分支门禁：工单分支从 develop 拉出、以 PR 合回 develop 时触发。
+# 对当前技术栈（可能变化）保持鲁棒：有 package.json 就构建校验，纯静态站点则跳过。
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect toolchain
+        id: detect
+        run: |
+          if [ -f package.json ]; then
+            echo "node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "node=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup pnpm
+        if: steps.detect.outputs.node == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        if: steps.detect.outputs.node == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.detect.outputs.node == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        if: steps.detect.outputs.node == 'true'
+        run: pnpm build
+
+      - name: Static site (no build step)
+        if: steps.detect.outputs.node == 'false'
+        run: echo "No package.json detected — treating repo as a static site; nothing to build."
