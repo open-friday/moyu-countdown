@@ -2,179 +2,190 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useEasterEggs } from '../hooks/useEasterEggs'
 
-// localStorage mock is provided by jsdom
-
 describe('useEasterEggs', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
     vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-03T10:00:00'))
   })
 
   afterEach(() => {
     vi.useRealTimers()
     localStorage.clear()
+    sessionStorage.clear()
   })
 
-  function makeDate(h: number, m: number, s: number): Date {
-    const d = new Date('2024-01-15')
+  function makeDate(h: number, m: number, s: number, date = '2026-07-02'): Date {
+    const d = new Date(date)
     d.setHours(h, m, s, 0)
     return d
   }
 
-  // Safe "idle" time that doesn't trigger any time-based egg (s≠0 and m≠0)
   const IDLE = makeDate(10, 30, 5)
 
   it('starts with no active egg', () => {
-    const { result } = renderHook(() => useEasterEggs(makeDate(10, 30, 5)))
+    const { result } = renderHook(() => useEasterEggs(IDLE))
     expect(result.current.activeEgg).toBeNull()
   })
 
-  it('triggers time_noon at 12:00:00', () => {
+  it('triggers lunch signal at 11:30:00', () => {
     const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
-      initialProps: { now: makeDate(11, 59, 55) },
+      initialProps: { now: makeDate(11, 29, 55) },
     })
+
+    rerender({ now: makeDate(11, 30, 0) })
+    expect(result.current.activeEgg).toBe('egg_lunch_signal')
+  })
+
+  it('triggers friday confetti at Friday 15:00:00', () => {
+    const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
+      initialProps: { now: makeDate(14, 59, 55, '2026-07-03') },
+    })
+
+    rerender({ now: makeDate(15, 0, 0, '2026-07-03') })
+    expect(result.current.activeEgg).toBe('egg_friday_confetti')
+  })
+
+  it('triggers hour flash at non-special full hours', () => {
+    const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
+      initialProps: { now: makeDate(9, 59, 55) },
+    })
+
+    rerender({ now: makeDate(10, 0, 0) })
+    expect(result.current.activeEgg).toBe('egg_hour_flash')
+  })
+
+  it('triggers midnight at 00:00:00', () => {
+    const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
+      initialProps: { now: makeDate(23, 59, 55) },
+    })
+
+    rerender({ now: makeDate(0, 0, 0, '2026-07-03') })
+    expect(result.current.activeEgg).toBe('egg_midnight')
+  })
+
+  it('triggers overtime after work end plus two hours', () => {
+    const { result } = renderHook(() => useEasterEggs(makeDate(20, 0, 1), 18, 0))
+    expect(result.current.activeEgg).toBe('egg_overtime')
+  })
+
+  it('does not trigger time eggs when seconds do not match a trigger', () => {
+    const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
+      initialProps: { now: makeDate(11, 29, 59) },
+    })
+
+    rerender({ now: makeDate(11, 30, 1) })
     expect(result.current.activeEgg).toBeNull()
-
-    rerender({ now: makeDate(12, 0, 0) })
-    expect(result.current.activeEgg).toBe('time_noon')
   })
 
-  it('triggers time_offwork at 18:00:00', () => {
+  it('does not re-trigger the same egg in one session', () => {
     const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
-      initialProps: { now: makeDate(17, 59, 55) },
+      initialProps: { now: makeDate(11, 29, 55) },
     })
-    rerender({ now: makeDate(18, 0, 0) })
-    expect(result.current.activeEgg).toBe('time_offwork')
-  })
 
-  it('triggers time_fullhour at non-special full hours', () => {
-    const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
-      initialProps: { now: makeDate(10, 59, 55) },
-    })
-    rerender({ now: makeDate(11, 0, 0) })
-    expect(result.current.activeEgg).toBe('time_fullhour')
-  })
-
-  it('does not trigger when seconds != 0', () => {
-    const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
-      initialProps: { now: makeDate(11, 59, 59) },
-    })
-    rerender({ now: makeDate(12, 0, 1) })
-    expect(result.current.activeEgg).toBeNull()
-  })
-
-  it('does not re-trigger the same minute key twice', () => {
-    const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
-      initialProps: { now: makeDate(11, 59, 55) },
-    })
-    rerender({ now: makeDate(12, 0, 0) })
-    expect(result.current.activeEgg).toBe('time_noon')
+    rerender({ now: makeDate(11, 30, 0) })
+    expect(result.current.activeEgg).toBe('egg_lunch_signal')
 
     act(() => result.current.dismiss())
-    // Same key again — should not re-trigger
-    rerender({ now: makeDate(12, 0, 0) })
+    rerender({ now: makeDate(11, 30, 0) })
     expect(result.current.activeEgg).toBeNull()
   })
 
   it('dismiss clears active egg', () => {
     const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
-      initialProps: { now: makeDate(11, 59, 55) },
+      initialProps: { now: makeDate(11, 29, 55) },
     })
-    rerender({ now: makeDate(12, 0, 0) })
-    expect(result.current.activeEgg).toBe('time_noon')
 
+    rerender({ now: makeDate(11, 30, 0) })
     act(() => result.current.dismiss())
     expect(result.current.activeEgg).toBeNull()
   })
 
   it('replay sets active egg without changing unlocked state', () => {
-    const now = IDLE
-    const { result } = renderHook(() => useEasterEggs(now))
-    act(() => result.current.replay('behavior_fish'))
-    expect(result.current.activeEgg).toBe('behavior_fish')
+    const { result } = renderHook(() => useEasterEggs(IDLE))
+    act(() => result.current.replay('egg_frenzy_refresh'))
+    expect(result.current.activeEgg).toBe('egg_frenzy_refresh')
+    expect(result.current.unlockedIds.has('egg_frenzy_refresh')).toBe(false)
   })
 
-  it('unlocks egg and persists to localStorage on trigger', () => {
+  it('unlocks egg and persists to egg_gallery on trigger', () => {
     const { result, rerender } = renderHook(({ now }) => useEasterEggs(now), {
-      initialProps: { now: makeDate(11, 59, 55) },
+      initialProps: { now: makeDate(11, 29, 55) },
     })
-    rerender({ now: makeDate(12, 0, 0) })
 
-    expect(result.current.unlockedIds.has('time_noon')).toBe(true)
-    const stored = JSON.parse(localStorage.getItem('moyu_unlocked_eggs') ?? '[]')
-    expect(stored).toContain('time_noon')
+    rerender({ now: makeDate(11, 30, 0) })
+
+    expect(result.current.unlockedIds.has('egg_lunch_signal')).toBe(true)
+    const stored = JSON.parse(localStorage.getItem('egg_gallery') ?? '{}')
+    expect(Object.keys(stored)).toHaveLength(8)
+    expect(stored.egg_lunch_signal.unlocked).toBe(true)
+    expect(stored.egg_friday_confetti.unlocked).toBe(false)
+    expect(stored.egg_lunch_signal.firstUnlockedAt).toBeTruthy()
   })
 
-  it('loads unlocked state from localStorage on init', () => {
-    localStorage.setItem('moyu_unlocked_eggs', JSON.stringify(['behavior_fish', 'time_noon']))
+  it('loads unlocked state from egg_gallery on init', () => {
+    localStorage.setItem('egg_gallery', JSON.stringify({
+      egg_lunch_signal: { unlocked: true, firstUnlockedAt: '2026-07-03T00:00:00.000Z' },
+      egg_frenzy_refresh: { unlocked: true },
+    }))
+
     const { result } = renderHook(() => useEasterEggs(IDLE))
-    expect(result.current.unlockedIds.has('behavior_fish')).toBe(true)
-    expect(result.current.unlockedIds.has('time_noon')).toBe(true)
+    expect(result.current.unlockedIds.has('egg_lunch_signal')).toBe(true)
+    expect(result.current.unlockedIds.has('egg_frenzy_refresh')).toBe(true)
   })
 
-  it('allEggs reflects unlocked state', () => {
-    localStorage.setItem('moyu_unlocked_eggs', JSON.stringify(['time_offwork']))
+  it('maps legacy unlocked ids into the new gallery contract', () => {
+    localStorage.setItem('moyu_unlocked_eggs', JSON.stringify(['time_noon', 'time_offwork', 'time_fullhour', 'behavior_warp']))
+
     const { result } = renderHook(() => useEasterEggs(IDLE))
-    const offwork = result.current.allEggs.find(e => e.def.id === 'time_offwork')
-    const noon = result.current.allEggs.find(e => e.def.id === 'time_noon')
-    expect(offwork?.unlocked).toBe(true)
-    expect(noon?.unlocked).toBe(false)
+    expect(result.current.unlockedIds.has('egg_lunch_signal')).toBe(true)
+    expect(result.current.unlockedIds.has('egg_overtime')).toBe(true)
+    expect(result.current.unlockedIds.has('egg_hour_flash')).toBe(true)
+    expect(result.current.unlockedIds.has('egg_longpress')).toBe(true)
   })
 
-  it('handleCountdownClick triggers behavior_fish after 10 rapid clicks', () => {
+  it('allEggs reflects unlocked state and all 8 definitions', () => {
+    localStorage.setItem('egg_gallery', JSON.stringify({
+      egg_overtime: { unlocked: true },
+    }))
+
     const { result } = renderHook(() => useEasterEggs(IDLE))
-    act(() => {
-      for (let i = 0; i < 10; i++) {
-        result.current.handleCountdownClick()
-      }
-    })
-    expect(result.current.activeEgg).toBe('behavior_fish')
+    expect(result.current.allEggs).toHaveLength(8)
+    expect(result.current.allEggs.find(e => e.def.id === 'egg_overtime')?.unlocked).toBe(true)
+    expect(result.current.allEggs.find(e => e.def.id === 'egg_lunch_signal')?.unlocked).toBe(false)
   })
 
-  it('handleCountdownClick does not trigger on fewer than 10 clicks', () => {
+  it('handleBlankDoubleClick triggers the double tap blank egg', () => {
     const { result } = renderHook(() => useEasterEggs(IDLE))
-    act(() => {
-      for (let i = 0; i < 9; i++) {
-        result.current.handleCountdownClick()
-      }
-    })
-    expect(result.current.activeEgg).toBeNull()
+
+    act(() => result.current.handleBlankDoubleClick())
+    expect(result.current.activeEgg).toBe('egg_doubletap_blank')
   })
 
-  it('handleCountdownClick resets counter after trigger', () => {
+  it('triggerFrenzyRefresh triggers the high frequency refresh egg', () => {
     const { result } = renderHook(() => useEasterEggs(IDLE))
-    act(() => {
-      for (let i = 0; i < 10; i++) result.current.handleCountdownClick()
-    })
-    expect(result.current.activeEgg).toBe('behavior_fish')
-    act(() => result.current.dismiss())
 
-    // Should need 10 more clicks
-    act(() => {
-      for (let i = 0; i < 9; i++) result.current.handleCountdownClick()
-    })
-    expect(result.current.activeEgg).toBeNull()
+    act(() => result.current.triggerFrenzyRefresh())
+    expect(result.current.activeEgg).toBe('egg_frenzy_refresh')
   })
 
-  it('handleProgressPointerDown triggers behavior_warp after 3s', () => {
+  it('handleCountdownPointerDown triggers longpress after 3s', () => {
     const { result } = renderHook(() => useEasterEggs(IDLE))
-    act(() => result.current.handleProgressPointerDown())
+
+    act(() => result.current.handleCountdownPointerDown())
     expect(result.current.activeEgg).toBeNull()
 
     act(() => vi.advanceTimersByTime(3000))
-    expect(result.current.activeEgg).toBe('behavior_warp')
+    expect(result.current.activeEgg).toBe('egg_longpress')
   })
 
-  it('handleProgressPointerUp cancels the long press', () => {
+  it('handleCountdownPointerUp cancels the long press', () => {
     const { result } = renderHook(() => useEasterEggs(IDLE))
-    act(() => result.current.handleProgressPointerDown())
-    act(() => result.current.handleProgressPointerUp())
+
+    act(() => result.current.handleCountdownPointerDown())
+    act(() => result.current.handleCountdownPointerUp())
     act(() => vi.advanceTimersByTime(3000))
     expect(result.current.activeEgg).toBeNull()
-  })
-
-  it('allEggs returns all 5 egg definitions', () => {
-    const { result } = renderHook(() => useEasterEggs(IDLE))
-    expect(result.current.allEggs).toHaveLength(5)
   })
 })

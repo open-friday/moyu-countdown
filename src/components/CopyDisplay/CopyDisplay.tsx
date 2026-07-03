@@ -16,6 +16,7 @@ const FREQUENT_MESSAGES = [
 
 interface CopyDisplayProps {
   now: Date
+  onFrequentRefresh?: () => void
 }
 
 function readNumber(key: string): number {
@@ -52,7 +53,7 @@ function isCoolingDownUntil(cooldownUntil: number, ts = Date.now()) {
   return ts < cooldownUntil
 }
 
-export function CopyDisplay({ now }: CopyDisplayProps) {
+export function CopyDisplay({ now, onFrequentRefresh }: CopyDisplayProps) {
   const hour = now.getHours()
   const label = getSegmentLabel(hour)
 
@@ -80,11 +81,12 @@ export function CopyDisplay({ now }: CopyDisplayProps) {
       sessionStorage.setItem(REFRESH_COOLDOWN_KEY, String(until))
       setCooldownUntil(until)
       setMessage(getLockedFrequentMessage())
+      onFrequentRefresh?.()
       return
     }
 
     setMessage(getRandomMessage(hour))
-  }, [cooldownUntil, hour])
+  }, [cooldownUntil, hour, onFrequentRefresh])
 
   useEffect(() => {
     if (prevLabelRef.current !== label) {

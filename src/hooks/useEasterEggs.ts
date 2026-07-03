@@ -2,37 +2,116 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { EGG_DEFS } from '../constants/easterEggDefs'
 import type { EasterEggId, EasterEggItem } from '../types/easterEgg'
 
-const STORAGE_KEY = 'moyu_unlocked_eggs'
+const GALLERY_STORAGE_KEY = 'egg_gallery'
+const LEGACY_UNLOCKED_KEY = 'moyu_unlocked_eggs'
+const SESSION_FIRED_KEY = 'egg_fired_this_session'
 
-function loadUnlocked(): Set<EasterEggId> {
+interface GalleryEntry {
+  unlocked: boolean
+  firstUnlockedAt?: string
+}
+
+type GalleryState = Partial<Record<EasterEggId, GalleryEntry>>
+
+const LEGACY_ID_MAP: Partial<Record<string, EasterEggId>> = {
+  time_noon: 'egg_lunch_signal',
+  time_offwork: 'egg_overtime',
+  time_fullhour: 'egg_hour_flash',
+  behavior_fish: 'egg_frenzy_refresh',
+  behavior_warp: 'egg_longpress',
+}
+
+const memoryFired = new Set<EasterEggId>()
+
+function emptyGallery(): GalleryState {
+  return {}
+}
+
+function normalizeGallery(value: unknown): GalleryState {
+  if (!value || typeof value !== 'object') return emptyGallery()
+  const knownIds = new Set(EGG_DEFS.map(def => def.id))
+  return Object.entries(value as Record<string, GalleryEntry>).reduce<GalleryState>((acc, [id, entry]) => {
+    if (knownIds.has(id as EasterEggId) && entry?.unlocked) {
+      acc[id as EasterEggId] = {
+        unlocked: true,
+        firstUnlockedAt: typeof entry.firstUnlockedAt === 'string' ? entry.firstUnlockedAt : undefined,
+      }
+    }
+    return acc
+  }, {})
+}
+
+function loadGallery(): GalleryState {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (!stored) return new Set()
-    return new Set(JSON.parse(stored) as EasterEggId[])
+    const stored = localStorage.getItem(GALLERY_STORAGE_KEY)
+    const gallery = stored ? normalizeGallery(JSON.parse(stored)) : emptyGallery()
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_UNLOCKED_KEY) || '[]') as string[]
+
+    if (Array.isArray(legacy)) {
+      legacy.forEach(id => {
+        const mappedId = LEGACY_ID_MAP[id] ?? (EGG_DEFS.some(def => def.id === id) ? id as EasterEggId : undefined)
+        if (mappedId && !gallery[mappedId]) {
+          gallery[mappedId] = { unlocked: true }
+        }
+      })
+    }
+
+    return gallery
   } catch {
-    return new Set()
+    return emptyGallery()
   }
 }
 
-function saveUnlocked(ids: Set<EasterEggId>) {
+function saveGallery(gallery: GalleryState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+    const completeGallery = EGG_DEFS.reduce<Record<EasterEggId, GalleryEntry>>((acc, def) => {
+      acc[def.id] = gallery[def.id] ?? { unlocked: false }
+      return acc
+    }, {} as Record<EasterEggId, GalleryEntry>)
+    localStorage.setItem(GALLERY_STORAGE_KEY, JSON.stringify(completeGallery))
   } catch {}
 }
 
-export function useEasterEggs(now: Date) {
+function loadFiredThisSession(): Set<EasterEggId> {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(SESSION_FIRED_KEY) || '[]') as string[]
+    if (!Array.isArray(parsed)) return new Set(memoryFired)
+    const knownIds = new Set(EGG_DEFS.map(def => def.id))
+    return new Set(parsed.filter((id): id is EasterEggId => knownIds.has(id as EasterEggId)))
+  } catch {
+    return new Set(memoryFired)
+  }
+}
+
+function saveFiredThisSession(ids: Set<EasterEggId>) {
+  memoryFired.clear()
+  ids.forEach(id => memoryFired.add(id))
+  try {
+    sessionStorage.setItem(SESSION_FIRED_KEY, JSON.stringify([...ids]))
+  } catch {}
+}
+
+export function useEasterEggs(now: Date, workEndHour = 18, workEndMinute = 0) {
   const [activeEgg, setActiveEgg] = useState<EasterEggId | null>(null)
-  const [unlockedIds, setUnlockedIds] = useState<Set<EasterEggId>>(loadUnlocked)
+  const [gallery, setGallery] = useState<GalleryState>(loadGallery)
 
   const lastTimeTriggerKey = useRef('')
-  const clickTimestamps = useRef<number[]>([])
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const trigger = useCallback((id: EasterEggId) => {
-    setUnlockedIds(prev => {
-      const next = new Set(prev)
-      next.add(id)
-      saveUnlocked(next)
+    const fired = loadFiredThisSession()
+    if (fired.has(id)) return
+    fired.add(id)
+    saveFiredThisSession(fired)
+
+    setGallery(prev => {
+      const next = {
+        ...prev,
+        [id]: prev[id]?.unlocked
+          ? prev[id]
+          : { unlocked: true, firstUnlockedAt: new Date().toISOString() },
+      }
+      saveGallery(next)
       return next
     })
     setActiveEgg(id)
@@ -42,43 +121,42 @@ export function useEasterEggs(now: Date) {
 
   const replay = useCallback((id: EasterEggId) => setActiveEgg(id), [])
 
-  // Time-triggered Easter eggs: fire at the top of each minute
+  // Time-triggered Easter eggs.
   useEffect(() => {
     const h = now.getHours()
     const m = now.getMinutes()
     const s = now.getSeconds()
-    if (s !== 0) return
 
-    const key = `${h}:${m}`
+    const key = `${now.toDateString()}:${h}:${m}:${s}`
     if (lastTimeTriggerKey.current === key) return
     lastTimeTriggerKey.current = key
 
-    if (h === 12 && m === 0) {
-      trigger('time_noon')
-    } else if (h === 18 && m === 0) {
-      trigger('time_offwork')
-    } else if (m === 0) {
-      trigger('time_fullhour')
+    if (s === 0 && h === 11 && m === 30) {
+      trigger('egg_lunch_signal')
+    } else if (s === 0 && now.getDay() === 5 && h === 15 && m === 0) {
+      trigger('egg_friday_confetti')
+    } else if (s === 0 && h === 0 && m === 0) {
+      trigger('egg_midnight')
+    } else if (s === 0 && m === 0) {
+      trigger('egg_hour_flash')
+    } else {
+      const workEnd = new Date(now)
+      workEnd.setHours(workEndHour, workEndMinute, 0, 0)
+      if (now.getTime() >= workEnd.getTime() + 2 * 60 * 60 * 1000) {
+        trigger('egg_overtime')
+      }
     }
-  }, [now, trigger])
+  }, [now, trigger, workEndHour, workEndMinute])
 
-  // Behavior: 10 rapid clicks on countdown area within 3 seconds
-  const handleCountdownClick = useCallback(() => {
-    const ts = Date.now()
-    clickTimestamps.current = clickTimestamps.current.filter(t => ts - t < 3000)
-    clickTimestamps.current.push(ts)
-    if (clickTimestamps.current.length >= 10) {
-      clickTimestamps.current = []
-      trigger('behavior_fish')
-    }
+  const handleBlankDoubleClick = useCallback(() => {
+    trigger('egg_doubletap_blank')
   }, [trigger])
 
-  // Behavior: 3-second long press on progress bar
-  const handleProgressPointerDown = useCallback(() => {
-    longPressTimer.current = setTimeout(() => trigger('behavior_warp'), 3000)
+  const handleCountdownPointerDown = useCallback(() => {
+    longPressTimer.current = setTimeout(() => trigger('egg_longpress'), 3000)
   }, [trigger])
 
-  const handleProgressPointerUp = useCallback(() => {
+  const handleCountdownPointerUp = useCallback(() => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
@@ -93,8 +171,11 @@ export function useEasterEggs(now: Date) {
 
   const allEggs: EasterEggItem[] = EGG_DEFS.map(def => ({
     def,
-    unlocked: unlockedIds.has(def.id),
+    unlocked: Boolean(gallery[def.id]?.unlocked),
+    firstUnlockedAt: gallery[def.id]?.firstUnlockedAt,
   }))
+
+  const unlockedIds = new Set(EGG_DEFS.filter(def => gallery[def.id]?.unlocked).map(def => def.id))
 
   return {
     activeEgg,
@@ -102,8 +183,9 @@ export function useEasterEggs(now: Date) {
     allEggs,
     dismiss,
     replay,
-    handleCountdownClick,
-    handleProgressPointerDown,
-    handleProgressPointerUp,
+    triggerFrenzyRefresh: () => trigger('egg_frenzy_refresh'),
+    handleBlankDoubleClick,
+    handleCountdownPointerDown,
+    handleCountdownPointerUp,
   }
 }

@@ -62,10 +62,11 @@ export default function App() {
     allEggs,
     dismiss,
     replay,
-    handleCountdownClick,
-    handleProgressPointerDown,
-    handleProgressPointerUp,
-  } = useEasterEggs(now)
+    triggerFrenzyRefresh,
+    handleBlankDoubleClick,
+    handleCountdownPointerDown,
+    handleCountdownPointerUp,
+  } = useEasterEggs(now, targetHour, targetMinute)
 
   const weekday = getWeekdayKey(now)
   const dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
@@ -89,7 +90,15 @@ export default function App() {
   }
 
   return (
-    <div className={styles.app} data-weekday={weekday}>
+    <div
+      className={styles.app}
+      data-weekday={weekday}
+      onDoubleClick={event => {
+        const target = event.target as HTMLElement
+        if (target.closest('button, input, select, textarea, a, [role="button"]')) return
+        handleBlankDoubleClick()
+      }}
+    >
       <div className={styles.page}>
         {/* Header */}
         <div className={styles.pageHead}>
@@ -115,9 +124,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* Flip countdown — click 10× rapidly to trigger "发现摸鱼者" */}
+        {/* Flip countdown — long press 3s to trigger the PRD longpress egg */}
         <div
-          onClick={handleCountdownClick}
+          onPointerDown={handleCountdownPointerDown}
+          onPointerUp={handleCountdownPointerUp}
+          onPointerLeave={handleCountdownPointerUp}
+          onPointerCancel={handleCountdownPointerUp}
           style={{ cursor: 'default', userSelect: 'none' }}
           role="button"
           tabIndex={-1}
@@ -131,18 +143,9 @@ export default function App() {
         </div>
 
         {/* 9-segment time copy */}
-        <CopyDisplay now={now} />
+        <CopyDisplay now={now} onFrequentRefresh={triggerFrenzyRefresh} />
 
-        {/* Progress bar — long press 3s to trigger "时间加速幻觉" */}
-        <div
-          onPointerDown={handleProgressPointerDown}
-          onPointerUp={handleProgressPointerUp}
-          onPointerLeave={handleProgressPointerUp}
-          onPointerCancel={handleProgressPointerUp}
-          style={{ touchAction: 'none' }}
-        >
-          <ProgressBar now={now} />
-        </div>
+        <ProgressBar now={now} />
 
         {/* Footer */}
         <div className={styles.footer}>

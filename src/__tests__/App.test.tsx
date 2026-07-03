@@ -5,7 +5,10 @@ import App from '../App'
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }))
 
 describe('App', () => {
-  beforeEach(() => { vi.useFakeTimers() })
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2024-01-15T09:00:00'))
+  })
   afterEach(() => { vi.useRealTimers() })
 
   it('renders without crashing', () => {
