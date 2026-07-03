@@ -87,6 +87,16 @@
   color: var(--color-text-3);
 }
 
+.message {
+  margin: 0;
+  padding: 10px var(--s-3);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--color-danger, #FF6B6B) 14%, transparent);
+  color: var(--color-danger, #FF6B6B);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .actions {
   display: flex;
   gap: var(--s-3);

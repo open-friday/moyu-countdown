@@ -42,31 +42,39 @@ describe('SettingsSheet', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('clamps end hour above 22 to 22', () => {
+  it('keeps valid end hour up to 23', () => {
     const onSave = vi.fn()
     render(<SettingsSheet {...defaultProps} onSave={onSave} onClose={vi.fn()} />)
     const hourInput = screen.getByLabelText('小时')
-    fireEvent.change(hourInput, { target: { value: '99' } })
+    fireEvent.change(hourInput, { target: { value: '23' } })
     fireEvent.click(screen.getByText('保存'))
-    expect(onSave).toHaveBeenCalledWith(9, 0, 22, 0)
+    expect(onSave).toHaveBeenCalledWith(9, 0, 23, 0)
   })
 
-  it('clamps start hour below 6 to 6', () => {
+  it('rejects start time below 06:00 and restores the effective value', () => {
     const onSave = vi.fn()
-    render(<SettingsSheet {...defaultProps} onSave={onSave} onClose={vi.fn()} />)
-    const startHourInput = screen.getByLabelText('上班小时')
-    fireEvent.change(startHourInput, { target: { value: '2' } })
+    const onClose = vi.fn()
+    render(<SettingsSheet {...defaultProps} onSave={onSave} onClose={onClose} />)
+    const startHourInput = screen.getByLabelText('上班小时') as HTMLInputElement
+    const startMinuteInput = screen.getByLabelText('上班分钟') as HTMLInputElement
+    fireEvent.change(startHourInput, { target: { value: '5' } })
+    fireEvent.change(startMinuteInput, { target: { value: '30' } })
     fireEvent.click(screen.getByText('保存'))
-    expect(onSave).toHaveBeenCalledWith(6, 0, 18, 0)
+    expect(screen.getByText('上班时间需在 06:00–22:00 之间')).toBeInTheDocument()
+    expect(startHourInput.value).toBe('09')
+    expect(startMinuteInput.value).toBe('00')
+    expect(onSave).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('clamps minute above 59 to 59', () => {
+  it('rejects invalid end minute without saving', () => {
     const onSave = vi.fn()
     render(<SettingsSheet {...defaultProps} onSave={onSave} onClose={vi.fn()} />)
     const minInput = screen.getByLabelText('分钟')
     fireEvent.change(minInput, { target: { value: '99' } })
     fireEvent.click(screen.getByText('保存'))
-    expect(onSave).toHaveBeenCalledWith(9, 0, 18, 59)
+    expect(screen.getByText('暂不支持跨夜班')).toBeInTheDocument()
+    expect(onSave).not.toHaveBeenCalled()
   })
 
   it('closes on Escape key', () => {
